@@ -1,39 +1,39 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import {Stack} from "expo-router";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import {SplashScreen} from "expo-router";
+import "../global.css";
+import {useFonts} from "expo-font";
+import {useEffect} from "react";
+// @ts-ignore
+import GlobalProvider from '../context/GlobalProvider'
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+const RootLayout = () => {
+  const [fontsLoaded, error] = useFonts({
+      Poppins: require('../assets/fonts/Poppins-Regular.ttf'),
+      "Poppins-Bold": require('../assets/fonts/Poppins-Bold.ttf'),
+      "Poppins-SemiBold": require('../assets/fonts/Poppins-SemiBold.ttf'),
+      "Poppins-Medium" : require('../assets/fonts/Poppins-Medium.ttf'),
+      Quicksand: require('../assets/fonts/Quicksand-static/Quicksand-Regular.ttf'),
+      Raleway: require('../assets/fonts/Raleway-Regular.ttf'),
+      Sintony: require('../assets/fonts/Sintony-Regular.ttf'),
+      "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
+  })
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
+  useEffect(()=>{
+    if(fontsLoaded || error){
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
+  }, [fontsLoaded]);
+  if(!fontsLoaded && !error) {
+      console.log(error)
+      return null;
   }
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+
+  return(
+      <GlobalProvider>
+        <Stack screenOptions={{headerShown: false}}/>
+      </GlobalProvider>
+  )
 }
+ export default RootLayout
