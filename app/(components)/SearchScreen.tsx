@@ -16,7 +16,7 @@ interface User {
 
 const SearchScreen = () => {
     const { query } = useLocalSearchParams();
-    const { userData, ngrokAPI } = useGlobal();
+    const { userData, ngrokAPI, followingUsers} = useGlobal();
     const [searchQuery, setSearchQuery] = useState(query as string || "");
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
@@ -101,11 +101,17 @@ const SearchScreen = () => {
         router.push(`/(components)/UserProfile?userId=${userId}`);
     };
 
+    // @ts-ignore
     return (
         <SafeAreaView className="bg-black flex-1 p-4">
-            <View className="mb-4">
+            <TouchableOpacity onPress={() => router.back()} className="flex-row">
+                <Image source={icons.arrow}/>
+                <Text className="text-white px-2 font-poppins-semibold text-lg">Back</Text>
+            </TouchableOpacity>
+            <Text className="text-white mt-10 font-poppins-semibold text-[24px]">Search.</Text>
+            <View className="mb-4 mt-10">
                 <TextInput
-                    className="bg-gray-800 text-white p-3 rounded-lg"
+                    className="bg-[#2A3235] text-white font-poppins-semibold p-6 rounded-lg"
                     placeholder="Search users..."
                     placeholderTextColor="#888"
                     value={searchQuery}
@@ -135,7 +141,7 @@ const SearchScreen = () => {
                         >
                             <View className="flex-row items-center">
                                 <Image
-                                    source={item.profileImage ? { uri: item.profileImage } : icons.userIcon}
+                                    source={item.profileImage}
                                     className="w-12 h-12 rounded-full bg-gray-700"
                                 />
                                 <Text className="text-white text-lg ml-3">{item.username}</Text>

@@ -55,7 +55,7 @@ const LeagueScreen: React.FC<LeagueScreenProps> = ({ userXP, League }) => {
                         const isPassedLeague = league.xpRequired <= userXP && !isCurrentLeague;
 
                         return (
-                            <View key={index} className="flex-row items-center mt-7 justify-between">
+                            <View key={index} className="flex-row items-center mt-16 justify-between">
                                 {/* Left side: Badge */}
                                 <View
                                     className={`rounded-full items-center justify-center ${
@@ -74,7 +74,7 @@ const LeagueScreen: React.FC<LeagueScreenProps> = ({ userXP, League }) => {
                                 </View>
 
                                 {/* Center: Badge Details */}
-                                <View className="ml-4 mt-6 flex-1">
+                                <View className="ml-10 flex-1">
                                     <Text
                                         className={`uppercase text-sm font-quicksand ${
                                             isCurrentLeague
@@ -100,7 +100,7 @@ const LeagueScreen: React.FC<LeagueScreenProps> = ({ userXP, League }) => {
                                 </View>
 
                                 {/* Right side: Promotion Details aligned left */}
-                                <View className="ml-4 mt-6">
+                                <View className="">
                                     <Text className="text-xs text-gray-500">PROMOTION:</Text>
                                     <Text className="text-xs text-gray-500">
                                         {league.xpRequired.toLocaleString()} XP

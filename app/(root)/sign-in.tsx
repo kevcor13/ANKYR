@@ -14,7 +14,7 @@ const SignIn = () => {
     const handleSubmit = async () => {
         const result = await loginUser(email, password);
         if (result.success) {
-            router.push("/home");
+            router.replace("/home");
         } else {
             alert(result.message || "Login failed. Please try again.");
         }

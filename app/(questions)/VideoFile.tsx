@@ -17,7 +17,9 @@ export default function VideoFile() {
                 onPlaybackStatusUpdate={(status) => {
                     if (status.didJustFinish) {
                         // "Refresh" by replacing the current route
-                        router.push('/home');
+                        router.replace('/home')
+
+
                     }
                 }
                 }

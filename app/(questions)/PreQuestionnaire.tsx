@@ -23,8 +23,8 @@ const PreQuestionnaire = () => {
                     handlePress={()=> router.push("/questionnaire")}
                 />
             </View>
-            <View>
-                <Image source={images.ankyrIcon}></Image>
+            <View className="mt-20 px-20 items-center flex justify-center">
+                <Image source={images.ankyrIcon} className="h-[55px] w-[50px]"></Image>
             </View>
         </View>
     )

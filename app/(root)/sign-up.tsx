@@ -1,4 +1,14 @@
-import {View, Text, ScrollView, Image, ImageBackground, TouchableOpacity, TextInput, Alert} from 'react-native'
+import {
+    View,
+    Text,
+    ScrollView,
+    Image,
+    ImageBackground,
+    TouchableOpacity,
+    TextInput,
+    Alert,
+    Keyboard, Platform, TouchableWithoutFeedback, KeyboardAvoidingView
+} from 'react-native'
 import React, {useState} from 'react'
 import {SafeAreaView} from "react-native-safe-area-context";
 import images from "@/constants/images"
@@ -11,16 +21,17 @@ import {useGlobal} from "@/context/GlobalProvider";
 const SignUp = () => {
     const {signUpUser} = useGlobal()
     const [showPassword, setShowPassword] = useState(false);
+    const [name, setName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const profile = images.ProfileImage
 
     const submit = async () =>{
-        const result = await signUpUser(username, email, password, profile);
+        const result = await signUpUser(name, username, email, password, profile);
         console.log("this is the part", result.status);
         if(result.status === "success"){
-            router.push("/home");
+            router.push("/OnboardQuestionnaire");
         } else {
             console.log(result);
         }
@@ -28,33 +39,57 @@ const SignUp = () => {
 
     return (
         <ImageBackground source={images.login} className="h-full w-full " resizeMode="cover">
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    className="flex-1"
+                >
             <ScrollView>
-                <View className="flex justify-center mt-40 py-4 px-6">
-                    <Text className="text-white font-poppins text-3xl">Welcome Back.</Text>
+                <View className="flex justify-center mt-24 py-4 px-6">
+                    <Image
+                        source={images.ankyrIcon}
+                        className="h-[63px] w-[58px]"
+                    />
+                    <Text className="text-white font-poppins-semibold text-[22px] mt-4">Create your Login.</Text>
 
-                    {/* the username input box */}
-                    <Text className="text-white mt-6">Username</Text>
-                    <View className="bg-black/40 mt-4 px-4 rounded-2xl py-4 focus:border-black">
+                    <Text className="text-white mt-6">Name</Text>
+                    <View className="bg-[#24292AB8] mt-4 px-4 rounded-2xl py-4 focus:border-black">
                         <TextInput
                             className="text-white font-poppins"
+                            placeholder="Your name"
+                            placeholderTextColor="#7B7B8B"
+                            onChangeText={(e) => setName(e)}
+                        />
+                    </View>
+                    {/* the username input box */}
+                    <Text className="text-white mt-6">Username</Text>
+                    <View className="bg-[#24292AB8] mt-4 px-4 rounded-2xl py-4 focus:border-black">
+                        <TextInput
+                            className="text-white font-poppins"
+                            placeholder="Your unique username"
+                            placeholderTextColor="#7B7B8B"
                             onChangeText={(e) => setUsername(e)}
                         />
                     </View>
 
                     {/*the email input box*/}
                     <Text className="text-white mt-6">Email</Text>
-                    <View className="bg-black/40 mt-4 px-4 rounded-2xl py-4 focus:border-black">
+                    <View className="bg-[#24292AB8] mt-4 px-4 rounded-2xl py-4 focus:border-black">
                         <TextInput
                             className="text-white font-poppins"
+                            placeholder="Enter your email"
+                            placeholderTextColor="#7B7B8B"
                             onChangeText={(e) => setEmail(e)}
                         />
                     </View>
 
                     {/*the password input box*/}
                     <Text className="text-white mt-6">Password</Text>
-                    <View className="bg-black/40 mt-4 px-4 rounded-2xl py-4 focus:border-black flex-row ">
+                    <View className="bg-[#24292AB8] mt-4 px-4 rounded-2xl py-4 focus:border-black flex-row ">
                         <TextInput
                             className="flex-1 text-white font-poppins"
+                            placeholder="Enter a unique password"
+                            placeholderTextColor="#7B7B8B"
                             onChangeText={(e) => setPassword(e)}
                             secureTextEntry={!showPassword}
                         />
@@ -79,10 +114,12 @@ const SignUp = () => {
                         <Text className="text-gray-500 text-lg font-poppins">
                             Already have an account?
                         </Text>
-                        <Link href="/sign-in" className="text-lg font-poppins text-blue-400">Sign in</Link>
+                        <Link href="/sign-in" className="text-lg font-poppins text-[#8AFFF9]">Sign in</Link>
                     </View>
                 </View>
             </ScrollView>
+                </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
         </ImageBackground>
     )
 }

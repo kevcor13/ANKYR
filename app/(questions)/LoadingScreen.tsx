@@ -18,7 +18,7 @@ const LoadingScreen = () => {
                     </Text>
                     <CustomButton
                         title="Go to my new personal app"
-                        handlePress={()=> router.push("/VideoFile")}
+                        handlePress={()=> router.replace("/VideoFile")}
                     />
                 </View>
             </View>

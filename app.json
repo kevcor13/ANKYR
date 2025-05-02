@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "package": "com.ankyr.Ankyr"
+      "package": "com.ankyr.Ankyr",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +34,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "enableFullScreenImage_legacy": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ],
       [

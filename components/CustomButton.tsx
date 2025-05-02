@@ -10,7 +10,7 @@ const CustomButton = ({handlePress, title} ) => {
             activeOpacity={0.7}
         >
             <View className="flex flex-row items-center justify-center">
-                <Text className="font-poppins text-center text-lg">{title}</Text>
+                <Text className="font-poppins-semibold text-center text-lg">{title}</Text>
             </View>
         </TouchableOpacity>
     )

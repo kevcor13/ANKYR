@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import nativeReanimated from "react-native-reanimated/src/NativeReanimated";
+import {router} from "expo-router";
 
 export const GlobalContext = createContext();
 export const useGlobal = () => useContext(GlobalContext);
@@ -15,14 +16,16 @@ const GlobalProvider = ({ children }) => {
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
     const [workoutPlan, setWorkoutPlan] = useState('');
-    const ngrokAPI = 'https://c647-140-209-96-63.ngrok-free.app'
+    const [followingUsers, setFollowingUsers] = useState([]);
+    const [followersUsers, setFollowersUsers] = useState([]);
+    const ngrokAPI = 'https://6f38-75-168-64-182.ngrok-free.app'
 
 
     // function to sign up the user
-    const signUpUser = async (username, email, password, profile) => {
+    const signUpUser = async (name, username, email, password, profile) => {
         console.log(profile);
         try{
-            const response = await axios.post(`${ngrokAPI}/register`, {username, email, password, profile});
+            const response = await axios.post(`${ngrokAPI}/register`, {name, username, email, password, profile});
             const data = response.data;
             console.log(data)
             if (data.status === "success") {
@@ -108,14 +111,39 @@ const GlobalProvider = ({ children }) => {
     // Function to log out the user
     const logoutUser = async () => {
         try {
-            await AsyncStorage.removeItem("token");
-            await AsyncStorage.removeItem("isLoggedIn");
+            // Get token for potential server-side logout
+            const token = await AsyncStorage.getItem("token");
+
+            // Clear all auth-related items from AsyncStorage
+            const keysToRemove = [
+                "token",
+                "isLoggedIn",
+                "userData",
+                "userPosts",
+                "userGameData"
+                // Add any other auth-related keys stored in AsyncStorage
+            ];
+
+            // Remove all items in parallel
+            await Promise.all(keysToRemove.map(key => AsyncStorage.removeItem(key)));
+
+            // Reset all state variables
             setIsLoggedIn(false);
             setUser(null);
-            setUserData(null); // Clear user data
+            setUserData('');
+            setUserPosts('');
             setQuestionStatus(false);
+            setUserGameData('');
+            setWorkoutPlan('');
+            setFollowingUsers([]);
+
+            // Navigate to login screen
+            router.replace("/sign-in");
+
+            return { success: true, message: "Successfully logged out" };
         } catch (error) {
             console.error("Logout Error:", error);
+            return { success: false, message: "Logout failed" };
         }
     };
 
@@ -126,7 +154,9 @@ const GlobalProvider = ({ children }) => {
             const token = await AsyncStorage.getItem("token");
             if (loggedIn === "true" && token) {
                 setIsLoggedIn(true);
-                fetchUserData(token); // Fetch user data using the token
+                await fetchUserData(token); // Fetch user data using the tokenn
+
+
 
             }
         } catch (error) {
@@ -178,6 +208,105 @@ const GlobalProvider = ({ children }) => {
             console.error("Login Error:", error);
         }
     }
+
+    // get the followers from user.
+    // inside GlobalProvider, replace your old fetchFollowingUsers with this:
+    const fetchFollowingUsers = async () => {
+        try {
+            // make sure you have the current user’s ID
+            if (!userData?._id) {
+                console.error('No user ID available for fetching followings');
+                return [];
+            }
+
+            // call your updated backend endpoint
+            const response = await axios.post(
+                `${ngrokAPI}/getFollowing`,
+                { userId: userData._id },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // if you require auth, include your token here:
+                        // Authorization: `Bearer ${await AsyncStorage.getItem("token")}`
+                    }
+                }
+            );
+
+            if (response.data.status === 'success') {
+                console.log(response.data.data);
+                // response.data.data is now an array of:
+                // { userId, username, email, profileImage, requestStatus }
+                const formatted = response.data.data.map(u => ({
+                    id:            u.userId,
+                    username:      u.username,
+                    email:         u.email,
+                    avatar:        u.profileImage,
+                    requestStatus: u.requestStatus  // true | false | null
+                }));
+
+                setFollowingUsers(formatted);
+                return formatted;
+            } else {
+                console.error('Failed to fetch following users:', response.data.message);
+                setFollowingUsers([]);
+                return [];
+            }
+
+        } catch (error) {
+            console.error('Error fetching following users:', error);
+            setFollowingUsers([]);
+            return [];
+        }
+    };
+
+    const fetchFollowerUsers = async () => {
+        try {
+            // make sure you have the current user’s ID
+            if (!userData?._id) {
+                console.error('No user ID available for fetching followings');
+                return [];
+            }
+
+            // call your updated backend endpoint
+            const response = await axios.post(
+                `${ngrokAPI}/getFollowers`,
+                { userId: userData._id },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // if you require auth, include your token here:
+                        // Authorization: `Bearer ${await AsyncStorage.getItem("token")}`
+                    }
+                }
+            );
+
+            if (response.data.status === 'success') {
+                console.log(response.data.data);
+                // response.data.data is now an array of:
+                // { userId, username, email, profileImage, requestStatus }
+                const formatted = response.data.data.map(u => ({
+                    id:            u.userId,
+                    username:      u.username,
+                    email:         u.email,
+                    avatar:        u.profileImage,
+                    requestStatus: u.requestStatus  // true | false | null
+                }));
+
+                setFollowersUsers(formatted);
+                return formatted;
+            } else {
+                console.error('Failed to fetch following users:', response.data.message);
+                setFollowingUsers([]);
+                return [];
+            }
+
+        } catch (error) {
+            console.error('Error fetching following users:', error);
+            setFollowingUsers([]);
+            return [];
+        }
+    };
+
 
 
     const fetchQuestionnaireCompletion = async ()  => {
@@ -235,6 +364,7 @@ const GlobalProvider = ({ children }) => {
                 isLoggedIn,
                 user,
                 userData, // Expose userData to the rest of the app
+                setUserData,
                 loading,
                 questionStatus,
                 userGameData,
@@ -247,7 +377,9 @@ const GlobalProvider = ({ children }) => {
                 markQuestionnaireCompleted,
                 fetchUserData, // Expose fetchUserData if needed elsewhere
                 fetchGameData,
-                fetchWorkout
+                fetchWorkout,
+                fetchFollowingUsers,
+                fetchFollowerUsers
             }}
         >
             {!loading && children}

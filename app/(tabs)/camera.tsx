@@ -10,6 +10,7 @@ import {
     Image
 } from 'react-native';
 import images from "@/constants/images";
+import icons from "@/constants/icons";
 import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -58,6 +59,8 @@ export default function App() {
                 });
 
                 console.log('Photo captured:', photo.uri);
+                const UserID =  userData?._id;
+                const image = photo.uri;
 
                 const token = await AsyncStorage.getItem("token");
                 if (!token) {
@@ -84,11 +87,7 @@ export default function App() {
                 };
 
                 // Upload the image
-                const response = await axios.post(
-                    `${ngrokAPI}/upload`,
-                    formData,
-                    config
-                );
+                const response = await axios.post(`${ngrokAPI}/upload`,{image, UserID});
 
                 if (response.data.status === 'success') {
                     console.log("Upload successful. Image URL:", response.data.data.url);
@@ -123,22 +122,22 @@ export default function App() {
 
                 {/* Top Bar with Title and Close Button */}
                 <SafeAreaView style={styles.topBar}>
-                    <Text style={styles.topTitle}>Snap!</Text>
+                    <Text style={styles.topTitle}>Capture.</Text>
                     <TouchableOpacity style={styles.closeButton} onPress={() => router.push('/home')}>
-                        <Text style={styles.closeText}>X</Text>
+                        <Image source={icons.x} className="w-10 h-10"/>
                     </TouchableOpacity>
                 </SafeAreaView>
 
                 {/* Bottom Bar for Controls */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={styles.iconButton} onPress={toggleCameraFacing}>
-                        <Image source={images.flipCamera} />
+                        <Image source={images.flipCamera} className="w-10 h-10"/>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
                         <Image source={images.aperture} />
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconButton]} onPress={() => router.push('/(components)/UserPost')}>
-                        <Image source={images.pictureIcons} />
+                        <Image source={images.pictureIcons} className="w-10 h-10"/>
                     </TouchableOpacity>
                 </View>
             </CameraView>
@@ -171,23 +170,23 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.4)',
     },
     topBar: {
-        position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        padding: 10,
+        backgroundColor: "black",
     },
     topTitle: {
         color: 'white',
+        paddingLeft: 30,
         fontSize: 20,
         fontWeight: 'bold',
     },
     closeButton: {
-        padding: 8,
+        padding: 20,
     },
     closeText: {
         color: 'white',
@@ -201,8 +200,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        padding: 40,
+        backgroundColor: 'black',
     },
     iconButton: {
         padding: 8,

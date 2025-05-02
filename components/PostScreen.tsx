@@ -7,8 +7,9 @@ interface Post {
     username: string;
     content: string;
     imageUrl: string;
+    userProfileImageUrl: string;
     createdAt: string;
-    UserID: string;
+    UserId: string;
 }
 
 interface PostScreenProps {

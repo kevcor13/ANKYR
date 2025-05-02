@@ -1,7 +1,8 @@
 import {View, Text, Image} from 'react-native'
 import React from 'react'
 import {Tabs} from "expo-router";
-import icons from '@/constants/images'
+import images from '@/constants/images'
+import icons from '@/constants/icons'
 const TabsLayout = () => {
 
 
@@ -11,7 +12,7 @@ const TabsLayout = () => {
                 source={icon}
                 tintColor={focused ? 'white' : 'gray'}
                 //tintColor={focused ? "#0061FF" : "#666876"}
-                className="size-13"
+                className="size-9"
             />
             <Text
                 className={`${
@@ -38,12 +39,12 @@ const TabsLayout = () => {
             }}
         >
             <Tabs.Screen
-                name="library"
+                name="nutrition"
                 options={{
-                    title: 'library',
+                    title: 'nutrition',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.meals} title="" />
+                        <TabIcon focused={focused} icon={images.meals} title="" />
                     )
                 }}
             />
@@ -53,7 +54,7 @@ const TabsLayout = () => {
                     title: 'challanges',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.streak} title="" />
+                        <TabIcon focused={focused} icon={icons.whiteZap} title="" />
                     )
                 }}
             />
@@ -63,7 +64,7 @@ const TabsLayout = () => {
                     title: 'home',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.ankyrIcon} title="" />
+                        <TabIcon focused={focused} icon={images.ankyrIcon} title="" />
                     )
                 }}
             />
@@ -74,7 +75,7 @@ const TabsLayout = () => {
                     headerShown: false,
                     tabBarStyle: { display: "none" },
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.WheelIcon}/>
+                        <TabIcon focused={focused} icon={images.WheelIcon}/>
                     )
                 }}
             />
@@ -84,7 +85,7 @@ const TabsLayout = () => {
                     title: 'profile',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.profile} title={''} />
+                        <TabIcon focused={focused} icon={images.profile} title={''} />
                     )
                 }}
             />

@@ -1,10 +1,12 @@
-import { View, Text, TouchableOpacity, SafeAreaView, Image, FlatList, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, Image, FlatList, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { router } from "expo-router";
 import images from "@/constants/images";
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from "axios";
+import { BlurView } from 'expo-blur';
+import * as Notifications from "expo-notifications"; // <== IMPORT BlurView
 
 interface UserImage {
     _id: string;
@@ -23,6 +25,33 @@ const UserPost = () => {
         fetchUserImages();
     }, []);
 
+    useEffect(() => {
+        if (userImages.length > 0) {
+            const timer = setInterval(async () => {
+                const now = new Date();
+                const anyNewlyReady = userImages.some(img => {
+                    const createdAt = new Date(img.createdAt);
+                    const diffInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+                    return diffInMinutes >= 5;
+                });
+                if (anyNewlyReady) {
+                    //Alert.alert('Image ready!', 'One of your images is now available!');
+                    await Notifications.scheduleNotificationAsync({
+                        content: {
+                            title: 'New Image!',
+                            body: `Your Image is Ready!`,
+                            data: {userId: userData.userId},
+                        },
+                        trigger: null,
+                    });
+                    clearInterval(timer);
+                }
+            }, 60000); // check every 1 min
+
+            return () => clearInterval(timer);
+        }
+    }, [userImages]);
+
     const fetchUserImages = async () => {
         if (!userData?._id) {
             console.error('No user ID available');
@@ -40,7 +69,6 @@ const UserPost = () => {
 
             const response = await axios.post(`${ngrokAPI}/UserImages`, { token, UserID });
             if (response.data.status === 'success') {
-                console.log(response.data.data);
                 setUserImages(response.data.data);
             } else {
                 console.error('Failed to fetch images:', response.data.data);
@@ -65,7 +93,7 @@ const UserPost = () => {
         const now = new Date();
         const createdDate = new Date(createdAt);
         const diffInMinutes = (now.getTime() - createdDate.getTime()) / (1000 * 60);
-        return diffInMinutes < 5;
+        return diffInMinutes < 5; // blurred if less than 5 minutes old
     };
 
     const groupedImages = userImages.reduce((acc: Record<string, UserImage[]>, img) => {
@@ -110,23 +138,33 @@ const UserPost = () => {
                         <View key={date} className="mb-6">
                             <Text className="text-white text-base mb-2 font-poppins-regular">{date}</Text>
                             <View className="flex-row flex-wrap gap-3">
-                                {images.map((img) => (
-                                    <TouchableOpacity
-                                        key={img._id}
-                                        onPress={() => handleImageClick(img)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <Image
-                                            source={{ uri: img.image }}
-                                            className="w-36 h-48 rounded-lg"
-                                            style={{
-                                                opacity: isBlurred(img.createdAt) ? 0.3 : 1,
-                                                filter: isBlurred(img.createdAt) ? 'blur(5px)' : 'none',
-                                            }}
-                                            resizeMode="cover"
-                                        />
-                                    </TouchableOpacity>
-                                ))}
+                                {images.map((img) => {
+                                    const blurred = isBlurred(img.createdAt);
+                                    return (
+                                        <View key={img._id}>
+                                            <TouchableOpacity
+                                                onPress={() => !blurred && handleImageClick(img)}
+                                                activeOpacity={blurred ? 1 : 0.8}
+                                                disabled={blurred}
+                                            >
+                                                <View className="w-36 h-48 rounded-lg overflow-hidden">
+                                                    <Image
+                                                        source={{ uri: img.image }}
+                                                        className="w-full h-full"
+                                                        resizeMode="cover"
+                                                    />
+                                                    {blurred && (
+                                                        <BlurView
+                                                            intensity={100}
+                                                            tint="dark"
+                                                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                                                        />
+                                                    )}
+                                                </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                    );
+                                })}
                             </View>
                         </View>
                     ))}

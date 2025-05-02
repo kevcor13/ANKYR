@@ -1,74 +1,98 @@
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 // @ts-ignore
-import CustomButton from "@/components/CustomButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
-import LeagueScreen from "@/components/LeagueScreen";
+import icons from "@/constants/icons";
+import LeagueScreen from "../../components/LeagueScreen";
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import PostCard from "@/components/PostCard";
-import axios from "axios";
 import PostScreen from "@/components/PostScreen";
+import NotificationScreen from "@/components/NotificationScreen";
+import axios from "axios";
 
-interface posts {
+interface Post {
     _id: string;
     username: string;
     content: string;
     imageUrl: string;
+    userProfileImageUrl: string;
     createdAt: string;
-    UserID: string;
+    UserId: string;
+}
+
+interface NotificationType {
+    _id: string;
+    type: string;        // e.g. "like"
+    from: string;        // who liked it
+    owner: string;       // whose photo it was
+    message: string;     // optional extra text
+    username: string;    // Add username to match what NotificationScreen expects
+    userProfileImageUrl: string;
+    imageUrl: string;    // the liked image URL
+    read: boolean;
+    createdAt: string;
 }
 
 const Profile: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'POSTS' | 'WORKOUTS' | 'PLAYLISTS' | 'LEAGUE'>('POSTS');
-    const { userData, fetchGameData, logoutUser, ngrokAPI } = useGlobal();
-    const [streak, setStreak] = useState<number | null>(null);
-    const [points, setPoints] = useState<number | null>(null);
-    const [league, setLeague] = useState<string | null>(null);
-    const [badgeImage, setBadgeImage] = useState<string | null>(null);
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [posts, setPosts] = useState<posts[]>([]);
-    const [loadingPosts, setLoadingPosts] = useState<boolean>(false);
+    const [activeTab, setActiveTab] = useState<'POSTS'|'NOTIFICATIONS'|'PLAYLISTS'|'LEAGUE'>('POSTS');
+    const { userData, fetchGameData, ngrokAPI } = useGlobal();
 
-    const handleSignOut = async () => {
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loadingPosts, setLoadingPosts] = useState(false);
+    const [loadingLeague, setLoadingLeague] = useState(false);
+
+    const [notifications, setNotifications] = useState<NotificationType[]>([]);
+    const [loadingNotifi, setLoadingNotifi] = useState(false);
+
+    const [points, setPoints] = useState<number|null>(null);
+    const [streak, setStreak] = useState<number|null>(null);
+    const [league, setLeague] = useState<string|null>(null);
+    const [badgeImage, setBadgeImage] = useState<string|null>(null);
+
+
+    // Create a reusable function to fetch notifications
+    const fetchUserNotifications = useCallback(async () => {
+        if (!userData?._id) return;
+
+        setLoadingNotifi(true);
         try {
-            setIsLoggingOut(true);
-            await logoutUser();
-            router.replace("/sign-in");
-        } catch (error) {
-            console.error("Logout error:", error);
+            const token = await AsyncStorage.getItem("token");
+            if (!token) throw new Error("No auth token");
+            const res = await axios.post(`${ngrokAPI}/getNotifications`, {
+                token,
+                userId: userData._id
+            });
+            if (res.data.status === "success") {
+                setNotifications(res.data.data);
+                console.log("Notifications fetched successfully");
+            } else {
+                console.error("Notifications fetch error:", res.data.data);
+            }
+        } catch (e) {
+            console.error("Error fetching notifications:", e);
+        } finally {
+            setLoadingNotifi(false);
         }
-    };
+    }, [userData, ngrokAPI]);
 
-    // Fetch user posts and game data when userData is available
     useEffect(() => {
-        if (isLoggingOut || !userData) return;
+        if (!userData?._id) return;
 
         const fetchUserPosts = async () => {
-            if (!userData?._id) {
-                console.error('No user ID available');
-                return;
-            }
-            const UserId = userData._id;
-
+            setLoadingPosts(true);
             try {
-                setLoadingPosts(true);
                 const token = await AsyncStorage.getItem("token");
-                if (!token) {
-                    console.error('No authentication token found');
-                    return;
-                }
-
-                const response = await axios.post(`${ngrokAPI}/getUserPosts`, { token, UserId });
-                if (response.data.status === 'success') {
-                    setPosts(response.data.data);
+                if (!token) throw new Error("No auth token");
+                const resp = await axios.post(`${ngrokAPI}/getUserPosts`, { token, UserId: userData._id });
+                if (resp.data.status === "success") {
+                    setPosts(resp.data.data);
                 } else {
-                    console.error('Failed to fetch images:', response.data.data);
+                    console.error("Posts fetch error:", resp.data.data);
                 }
-            } catch (error) {
-                console.error('Error fetching images:', error);
+            } catch (e) {
+                console.error("Error fetching posts:", e);
             } finally {
                 setLoadingPosts(false);
             }
@@ -77,79 +101,79 @@ const Profile: React.FC = () => {
         const fetchData = async () => {
             try {
                 const token = await AsyncStorage.getItem("token");
-                if (token && userData?._id) {
-                    const gameData = await fetchGameData(token, userData._id);
-                    if (gameData) {
-                        setPoints(gameData.points);
-                        setStreak(gameData.streak);
+                if (token) {
+                    const gd = await fetchGameData(token, userData._id);
+                    if (gd) {
+                        setPoints(gd.points);
+                        setStreak(gd.streak);
                     }
                 }
-            } catch (error) {
-                console.error("Error fetching game data:", error);
+            } catch (e) {
+                console.error("Error fetching game data:", e);
+            } finally {
+                setLoadingLeague(false);
             }
         };
 
-        fetchData();
         fetchUserPosts();
-    }, [userData, isLoggingOut]);
+        fetchUserNotifications();
+        fetchData();
+    }, [userData, fetchUserNotifications]);
 
-    // Determine league and badge based on points
+
     useEffect(() => {
-        if (points !== null) {
-            if (points >= 30000) {
-                setLeague("OLYMPIAN");
-                setBadgeImage(images.Olympian);
-            } else if (points >= 20000) {
-                setLeague("TITAN");
-                setBadgeImage(images.titan);
-            } else if (points >= 12000) {
-                setLeague("SKIPPER");
-                setBadgeImage(images.skipper);
-            } else if (points >= 5000) {
-                setLeague("PILOT");
-                setBadgeImage(images.pilot);
-            } else if (points >= 1000) {
-                setLeague("PRIVATE");
-                setBadgeImage(images.Private);
-            } else {
-                setLeague("NOVICE");
-                setBadgeImage(images.novice);
-            }
+        if (points === null) return;
+        if (points >= 30000) {
+            setLeague("OLYMPIAN"); setBadgeImage(images.Olympian);
+        } else if (points >= 20000) {
+            setLeague("TITAN"); setBadgeImage(images.titan);
+        } else if (points >= 12000) {
+            setLeague("SKIPPER"); setBadgeImage(images.skipper);
+        } else if (points >= 5000) {
+            setLeague("PILOT"); setBadgeImage(images.pilot);
+        } else if (points >= 1000) {
+            setLeague("PRIVATE"); setBadgeImage(images.Private);
+        } else {
+            setLeague("NOVICE"); setBadgeImage(images.novice);
         }
     }, [points]);
 
-    // Header and tab navigation
     const renderHeader = () => (
         <>
-            <View className="px-4 py-2">
-                <CustomButton title="Logout" handlePress={handleSignOut} />
-            </View>
             <View className="flex-row items-center justify-between mt-10 px-4">
-                <Image source={userData.profileImage} className="w-20 h-20 rounded-full" />
-                <TouchableOpacity className="mt-12 px-6">
-                    <Image source={images.followButton}/>
+                <Image
+                    source={userData?.profileImage ? { uri: userData.profileImage } : images.profile}
+                    className="w-28 h-28 rounded-full"
+                />
+                <TouchableOpacity onPress={() => router.push("/homeSettings")} className="mt-12 pr-28">
+                    <Image source={icons.settings} className="w-6 h-6" />
                 </TouchableOpacity>
-                <Image className="w-20 h-20 rounded-full" resizeMode="cover" />
-                {badgeImage ? (
-                    <Image source={badgeImage} className="w-28 h-28" resizeMode="contain" />
-                ) : (
-                    <Text className="text-gray-500">Loading badge...</Text>
-                )}
-            </View>
-            <View className="flex-row px-4">
+                {badgeImage
+                    ? <Image source={badgeImage} className="w-28 h-28" resizeMode="contain" />
+                    : <Text className="text-gray-500">Loading badge...</Text>
+                }
             </View>
             <View className="flex-row items-center justify-between mt-6 px-4">
                 <Text className="text-3xl font-poppins font-bold text-white">
-                    {userData?.username || "User"}
+                    {userData.username}
                 </Text>
                 <Text className="font-raleway text-3xl text-blue-400">
-                    {streak !== null ? streak : "Loading streak..."}
+                    {streak ?? "—"}
                 </Text>
             </View>
-            <View className="flex-row justify-around mt-6 border-b border-gray-600 px-4">
-                {['POSTS', 'WORKOUTS', 'PLAYLISTS', 'LEAGUE'].map((tab) => (
-                    <TouchableOpacity key={tab} onPress={() => setActiveTab(tab as any)}>
-                        <Text className={`text-lg ${activeTab === tab ? 'text-white' : 'text-gray-400'}`}>
+            <View className="flex-row justify-around mt-4">
+                {['POSTS','NOTIFICATIONS','PLAYLISTS','LEAGUE'].map(tab => (
+                    <TouchableOpacity
+                        key={tab}
+                        onPress={() => setActiveTab(tab as any)}
+                        className="relative py-4"
+                    >
+                        <View className={`border-t border-gray-600 absolute top-0 left-0 right-0 h-1 ${
+                            activeTab===tab ? 'bg-white' : 'bg-transparent'
+                        }`} />
+                        <Text className={`text-lg ${
+                            activeTab===tab ? 'text-white font-bold' : 'text-gray-400'
+                        }`}>
                             {tab}
                         </Text>
                     </TouchableOpacity>
@@ -158,11 +182,10 @@ const Profile: React.FC = () => {
         </>
     );
 
-    // Fallback if no posts exist
     const renderPostsFallback = () => (
         <View className="flex-1 justify-center items-center mt-4">
             <Text className="text-gray-500 italic">
-                {userData?.username || "User"} has not posted yet
+                {userData.username} has not posted yet
             </Text>
             <TouchableOpacity onPress={() => router.push("/(components)/CreatePost")}>
                 <View className="bg-gray-800 rounded-2xl p-2 mt-2">
@@ -172,55 +195,53 @@ const Profile: React.FC = () => {
         </View>
     );
 
-    // Render POSTS content by mapping over posts array
-    const renderPosts = () => (
-        <>
-            {posts.map((item) => (
-                <View key={item._id} className="px-4 mb-4">
-                    <PostCard post={item} />
-                </View>
-            ))}
-        </>
-    );
-
-    // For other tabs, wrap content in a ScrollView as well.
     return (
         <SafeAreaView className="px-6 bg-black h-full">
-            <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
                 {renderHeader()}
-                {activeTab === 'POSTS' && (
-                    loadingPosts ? (
-                        <View className="flex-1 justify-center items-center my-4">
-                            <ActivityIndicator size="large" color="#FFFFFF" />
-                        </View>
-                    ) : (
-                        posts.length > 0 ? (
-                            <PostScreen posts={posts} />
-                        ) : (
-                            renderPostsFallback()
-                        )
-                    )
+
+                {/* POSTS tab */}
+                {activeTab==='POSTS' && (
+                    loadingPosts
+                        ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 20 }} />
+                        : posts.length > 0
+                            ? <PostScreen posts={posts} />
+                            : renderPostsFallback()
                 )}
-                {activeTab === 'WORKOUTS' && (
-                    <View className="flex-1 justify-center items-center mt-4">
-                        <Text className="text-gray-500 italic">No workouts available yet</Text>
-                    </View>
+
+                {/* NOTIFICATIONS tab */}
+                {activeTab==='NOTIFICATIONS' && (
+                    loadingNotifi
+                        ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 20 }} />
+                        : notifications.length > 0
+                            ? <NotificationScreen
+                                notifications={notifications}
+                                refreshNotifications={fetchUserNotifications}
+                            />
+                            : (
+                                <View className="flex-1 justify-center items-center mt-4">
+                                    <Text className="text-gray-500 italic">No notifications yet</Text>
+                                </View>
+                            )
                 )}
-                {activeTab === 'PLAYLISTS' && (
+
+                {/* PLAYLISTS tab */}
+                {activeTab==='PLAYLISTS' && (
                     <View className="flex-1 justify-center items-center mt-4">
                         <Text className="text-gray-500 italic">No playlists created</Text>
                     </View>
                 )}
-                {activeTab === 'LEAGUE' && (
+
+                {/* LEAGUE tab */}
+                {activeTab==='LEAGUE' && (
                     <View className="flex-1 mt-4">
-                        {points !== null ? (
-                            <LeagueScreen userXP={points} League={league} />
-                        ) : (
-                            <Text className="text-gray-500 text-center">Loading League...</Text>
-                        )}
+                        {loadingLeague
+                            ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 20 }} />
+                            : points !== null
+                                ? <LeagueScreen userXP={points} League={league} />
+                                : <Text className="text-gray-500 text-center">No league data available</Text>
+                        }
                     </View>
                 )}
-            </ScrollView>
         </SafeAreaView>
     );
 };
